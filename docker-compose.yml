@@ -1,0 +1,71 @@
+# RNF-10: toda la pila con un solo comando →  docker compose up -d   (web en http://localhost:8080)
+name: asimetria
+
+x-api: &api
+  build: ./apps/api
+  image: asimetria-api:1.0.0
+  restart: unless-stopped
+  env_file: .env
+  environment:
+    DATABASE_URL: postgresql+psycopg://asimetria:${POSTGRES_PASSWORD}@db:5432/asimetria
+    REDIS_URL: redis://redis:6379/0
+
+services:
+  db:
+    image: timescale/timescaledb:2.17.2-pg16
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: asimetria
+      POSTGRES_USER: asimetria
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Define POSTGRES_PASSWORD en .env}
+    volumes:
+      - db-data:/var/lib/postgresql/data
+      - ./packages/db/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U asimetria -d asimetria"]
+      interval: 5s
+      retries: 20
+
+  redis:
+    image: redis:7.4-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--save", "", "--appendonly", "no", "--maxmemory", "128mb", "--maxmemory-policy", "allkeys-lru"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      retries: 20
+
+  api:
+    <<: *api
+    depends_on:
+      db: { condition: service_healthy }
+      redis: { condition: service_healthy }
+
+  worker:
+    <<: *api
+    command: ["celery", "-A", "app.worker", "worker", "-l", "info", "--concurrency", "2"]
+    healthcheck: { disable: true }
+    depends_on:
+      api: { condition: service_healthy }
+
+  beat:
+    <<: *api
+    command: ["celery", "-A", "app.worker", "beat", "-l", "info", "--schedule", "/tmp/celerybeat-schedule"]
+    healthcheck: { disable: true }
+    depends_on:
+      api: { condition: service_healthy }
+
+  web:
+    build: ./apps/web
+    image: asimetria-web:1.0.0
+    restart: unless-stopped
+    ports: ["8080:80"]
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1/index.html"]
+      interval: 30s
+      retries: 3
+    depends_on:
+      api: { condition: service_healthy }
+
+volumes:
+  db-data:

@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Precios — Asimetría</title>
+  <meta name="description" content="Planes Conservador, Moderado y Agresivo de Asimetría.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap">
+  <link rel="stylesheet" href="assets/css/styles.css">
+  <script defer src="assets/js/ui.js"></script>
+  <script defer src="assets/js/market.js"></script>
+  <script defer src="assets/js/pages/precios.js"></script>
+</head>
+<body>
+  <a class="skip" href="#main">Saltar al contenido</a>
+  <header class="site-header">
+    <div class="container">
+      <a class="brand" href="index.html"><span class="logo" aria-hidden="true">A</span>Asimetría</a>
+      <nav class="site-nav" aria-label="Principal">
+        <ul>
+          <li><a href="index.html#producto">Producto</a></li>
+          <li><a href="mercados.html">Mercados</a></li>
+          <li><a href="estrategias.html">Estrategias</a></li>
+          <li><a href="precios.html" aria-current="page">Precios</a></li>
+        </ul>
+      </nav>
+      <div class="row" id="acciones-cuenta">
+        <a class="btn" href="auth.html">Iniciar sesión</a>
+        <a class="btn btn-primary" href="auth.html?modo=registro">Crear cuenta</a>
+      </div>
+    </div>
+  </header>
+
+  <main id="main" class="section">
+    <div class="container">
+      <h1 style="font-size:clamp(28px,4vw,40px)">Elige el plan para tu perfil</h1>
+      <p class="intro">Cancela cuando quieras. Todos los precios en USD, impuestos (IVA 19 %) no incluidos.</p>
+      <div class="grid cols-3" id="planes"></div>
+    </div>
+  </main>
+
+  <footer class="site-footer"><div class="container spread"><span>© 2026 Asimetría</span><span>Sistema de Análisis de Inversiones Bursátiles</span></div></footer>
+
+  <dialog id="dlg-pago" aria-labelledby="t-pago">
+    <form id="form-pago" class="pay" novalidate>
+      <fieldset class="pay-plans">
+        <legend>Elige tu plan</legend>
+        <div id="pago-planes"></div>
+        <div class="totals">
+          <div><span id="tot-plan">Plan</span><span class="mono" id="tot-sub"></span></div>
+          <div><span>Impuestos (IVA 19 %)</span><span class="mono" id="tot-iva"></span></div>
+          <div class="total"><span>Total hoy</span><span class="mono" id="tot-total"></span></div>
+        </div>
+      </fieldset>
+
+      <div class="pay-form">
+        <div class="spread" style="align-items:flex-start">
+          <div><h2 id="t-pago" style="font-size:22px">Completa tu pago</h2><p class="muted small">Se te cobrará mensualmente hasta que canceles.</p></div>
+          <button class="btn btn-icon" type="button" id="btn-cerrar" aria-label="Cerrar">✕</button>
+        </div>
+        <fieldset class="segmented" style="grid-template-columns:repeat(3,1fr);margin-top:14px">
+          <legend class="sr-only">Método de pago</legend>
+          <input type="radio" name="metodo" id="m-tarjeta" value="tarjeta" checked><label for="m-tarjeta">Tarjeta</label>
+          <input type="radio" name="metodo" id="m-transf" value="transferencia"><label for="m-transf">Transferencia</label>
+          <input type="radio" name="metodo" id="m-paypal" value="paypal"><label for="m-paypal">PayPal</label>
+        </fieldset>
+
+        <div id="panel-tarjeta">
+          <div class="field"><label for="cc-num">Número de tarjeta</label>
+            <input class="input mono" id="cc-num" name="numero" autocomplete="cc-number" inputmode="numeric" maxlength="23" placeholder="1234 5678 9012 3456"></div>
+          <div class="grid" style="grid-template-columns:1fr 1fr;gap:14px">
+            <div class="field"><label for="cc-exp">Vencimiento</label><input class="input mono" id="cc-exp" name="exp" autocomplete="cc-exp" inputmode="numeric" maxlength="7" placeholder="MM / AA"></div>
+            <div class="field"><label for="cc-cvc">CVC</label><input class="input mono" id="cc-cvc" name="cvc" type="password" autocomplete="cc-csc" inputmode="numeric" maxlength="4"></div>
+          </div>
+          <div class="field"><label for="cc-nombre">Nombre en la tarjeta</label><input class="input" id="cc-nombre" name="titular" autocomplete="cc-name"></div>
+          <div class="field"><label for="cc-pais">País</label>
+            <select class="input" id="cc-pais" name="pais" autocomplete="country-name"><option>Colombia</option><option>Ecuador</option><option>México</option><option>Perú</option><option>Chile</option><option>España</option><option>Estados Unidos</option></select></div>
+        </div>
+        <p class="notice" id="panel-otro" hidden></p>
+
+        <p class="small muted">🔒 Pago cifrado de extremo a extremo · PCI DSS</p>
+        <p class="error-text" id="pago-error" role="alert"></p>
+        <button class="btn btn-primary btn-block" type="submit" id="btn-pagar" style="min-height:50px;font-size:16px">Pagar</button>
+        <p class="small muted" style="text-align:center;margin-top:12px">Puedes cancelar tu suscripción en cualquier momento desde tu cuenta.</p>
+      </div>
+    </form>
+  </dialog>
+</body>
+</html>

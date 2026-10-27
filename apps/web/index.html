@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Asimetría — Sistema de Análisis de Inversiones Bursátiles</title>
+  <meta name="description" content="Detecta movimientos asimétricos frente al NASDAQ 100 con beta alcista y bajista, estrategias por perfil de riesgo y backtesting.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap">
+  <link rel="stylesheet" href="assets/css/styles.css">
+  <script defer src="assets/js/ui.js"></script>
+  <script defer src="assets/js/market.js"></script>
+  <script defer src="assets/js/pages/landing.js"></script>
+</head>
+<body>
+  <a class="skip" href="#main">Saltar al contenido</a>
+
+  <header class="site-header">
+    <div class="container">
+      <a class="brand" href="index.html"><span class="logo" aria-hidden="true">A</span>Asimetría</a>
+      <nav class="site-nav" aria-label="Principal">
+        <ul>
+          <li><a href="#producto">Producto</a></li>
+          <li><a href="mercados.html">Mercados</a></li>
+          <li><a href="estrategias.html">Estrategias</a></li>
+          <li><a href="precios.html">Precios</a></li>
+        </ul>
+      </nav>
+      <div class="row" id="acciones-cuenta">
+        <a class="btn" href="auth.html">Iniciar sesión</a>
+        <a class="btn btn-primary" href="auth.html?modo=registro">Crear cuenta</a>
+      </div>
+    </div>
+  </header>
+
+  <main id="main">
+    <section class="container hero" aria-labelledby="titulo-hero">
+      <div>
+        <span class="pill"><b>Nuevo</b> Motor de detección de asimetrías v1</span>
+        <h1 id="titulo-hero">Detecta movimientos <em>asimétricos</em> antes que el mercado</h1>
+        <p class="lead">Análisis cuantitativo de activos bursátiles en tiempo real e histórico, con estrategias de inversión personalizadas según tu perfil de riesgo.</p>
+        <div class="row">
+          <a class="btn btn-primary" href="auth.html?modo=registro">Crear cuenta gratis</a>
+          <button class="btn" type="button" id="btn-demo">Ver demo en vivo</button>
+        </div>
+        <dl class="hero-stats">
+          <div><dt>10+</dt><dd>APIs de mercado</dd></div>
+          <div><dt>24/7</dt><dd>Datos en tiempo real</dd></div>
+          <div><dt>3</dt><dd>Perfiles de riesgo</dd></div>
+        </dl>
+      </div>
+
+      <article class="card hero-card" aria-labelledby="hero-activo">
+        <div class="spread">
+          <div>
+            <h2 id="hero-activo" style="font-family:var(--font-display);font-size:18px">RiTech S.A.S <span class="muted small">RTC</span></h2>
+            <p class="sub">vs. NASDAQ 100 · comportamiento asimétrico</p>
+          </div>
+          <span class="chip chip-up" id="hero-asimetria">Asimetría</span>
+        </div>
+        <ul class="legend">
+          <li style="--c:var(--pink)" id="hero-leyenda-activo">RiTech S.A.S</li>
+          <li style="--c:var(--primary)">NASDAQ 100</li>
+        </ul>
+        <svg class="chart chart-sm" id="hero-chart" role="img" aria-label="Rendimiento del activo destacado frente al NASDAQ 100 en las últimas 40 sesiones"></svg>
+        <div class="grid" style="grid-template-columns:repeat(3,1fr);gap:10px;margin-top:16px">
+          <div class="stat"><span class="label">Beta calculado</span><span class="value" id="hero-beta">—</span></div>
+          <div class="stat"><span class="label">Retorno 30d</span><span class="value" id="hero-ret">—</span></div>
+          <div class="stat"><span class="label">Volatilidad</span><span class="value" id="hero-vol">—</span></div>
+        </div>
+      </article>
+    </section>
+
+    <section class="section" id="producto" aria-labelledby="titulo-pilares">
+      <div class="container">
+        <h2 id="titulo-pilares">Todo lo que necesitas para invertir mejor</h2>
+        <p class="intro">Tres pilares que convierten datos de mercado en decisiones de inversión claras.</p>
+        <div class="grid cols-3">
+          <article class="card feature">
+            <div class="ico" aria-hidden="true">📈</div>
+            <h3>Inversión inteligente</h3>
+            <p>Identifica opciones de inversión y estrategias personalizadas según tu perfil: conservador, moderado o agresivo.</p>
+          </article>
+          <article class="card feature">
+            <div class="ico" aria-hidden="true">⚡</div>
+            <h3>Comportamientos asimétricos</h3>
+            <p>Detecta activos con movimientos diferenciales frente al índice, como subidas amplificadas y caídas amortiguadas.</p>
+          </article>
+          <article class="card feature">
+            <div class="ico" aria-hidden="true">💵</div>
+            <h3>Generación de ingresos</h3>
+            <p>Convierte el análisis cuantitativo automatizado en oportunidades reales de ingreso activo.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="modulos" aria-labelledby="titulo-modulos">
+      <div class="container">
+        <h2 id="titulo-modulos">Cuatro módulos, una sola plataforma</h2>
+        <p class="intro">Desde la ingesta de datos hasta la visualización de tu portafolio.</p>
+        <div class="grid cols-4">
+          <a class="card module" href="mercados.html"><small>MÓDULO 01</small><h3>Mercado y Datos</h3><p>APIs en tiempo real, histórico de cotizaciones y Beta personalizado.</p></a>
+          <a class="card module" href="estrategias.html"><small>MÓDULO 02</small><h3>Motor de Estrategias</h3><p>Filtrado por riesgo, backtesting y alertas inteligentes.</p></a>
+          <a class="card module" href="configuracion.html"><small>MÓDULO 03</small><h3>Gestión de Usuarios</h3><p>Autenticación segura, perfilamiento y watchlists.</p></a>
+          <a class="card module" href="analisis.html"><small>MÓDULO 04</small><h3>Visualización</h3><p>Dashboards interactivos y métricas clave al instante.</p></a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container spread">
+      <span>© 2026 Asimetría</span>
+      <span>Sistema de Análisis de Inversiones Bursátiles</span>
+    </div>
+  </footer>
+</body>
+</html>

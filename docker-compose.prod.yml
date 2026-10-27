@@ -1,0 +1,66 @@
+# Producción (servidor):  docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+# Usa las imágenes que GitHub Actions publica en GHCR (no compila en el servidor), añade Caddy (HTTPS),
+# copias de seguridad diarias y rotación de logs. Nada salvo Caddy (80/443) queda expuesto a Internet.
+x-logs: &logs
+  logging:
+    driver: json-file
+    options: { max-size: "10m", max-file: "5" }
+
+x-imagen-api: &imagen-api
+  image: ${REGISTRO:-ghcr.io/oscarhernandezvel}/asimetria-api:${TAG:-latest}
+
+services:
+  db:
+    <<: *logs
+  redis:
+    <<: *logs
+  api:
+    <<: [*logs, *imagen-api]
+  worker:
+    <<: [*logs, *imagen-api]
+  beat:
+    <<: [*logs, *imagen-api]
+  web:
+    <<: *logs
+    image: ${REGISTRO:-ghcr.io/oscarhernandezvel}/asimetria-web:${TAG:-latest}
+    ports: !reset []   # solo Caddy lo alcanza (red interna)
+
+  caddy:
+    <<: *logs
+    image: caddy:2.8-alpine
+    restart: unless-stopped
+    ports: ["80:80", "443:443", "443:443/udp"]   # 443/udp = HTTP/3
+    environment:
+      DOMINIO: ${DOMINIO:?Define DOMINIO en .env}
+      ACME_EMAIL: ${ACME_EMAIL:?Define ACME_EMAIL en .env}
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data        # certificados: no borrar (Let's Encrypt limita emisiones)
+      - caddy-config:/config
+    depends_on: [web]
+
+  # Copia diaria (formato custom de pg_dump) con 7 días de retención en ./backups.
+  # Restaurar: ver docs/DESPLIEGUE.md §8. Copiar ./backups fuera del servidor (snapshot o almacenamiento externo).
+  backup:
+    <<: *logs
+    image: timescale/timescaledb:2.17.2-pg16
+    restart: unless-stopped
+    environment:
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        while true; do
+          f=/backups/asimetria-$$(date +%F).dump
+          pg_dump -h db -U asimetria -d asimetria -Fc -f "$$f" && echo "backup ok: $$f" || echo "backup FALLÓ"
+          find /backups -name 'asimetria-*.dump' -mtime +7 -delete
+          sleep 86400
+        done
+    volumes:
+      - ./backups:/backups
+    depends_on:
+      db: { condition: service_healthy }
+
+volumes:
+  caddy-data:
+  caddy-config:

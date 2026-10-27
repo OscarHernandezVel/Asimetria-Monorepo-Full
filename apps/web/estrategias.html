@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Estrategias — Asimetría</title>
+  <meta name="description" content="Recomendaciones según tu perfil de riesgo y tabla comparativa de métricas financieras.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap">
+  <link rel="stylesheet" href="assets/css/styles.css">
+  <script defer src="assets/js/ui.js"></script>
+  <script defer src="assets/js/market.js"></script>
+  <script defer src="assets/js/pages/estrategias.js"></script>
+</head>
+<body data-protected data-nav="estrategias.html">
+  <a class="skip" href="#main">Saltar al contenido</a>
+  <div class="app">
+    <aside class="sidebar" data-sidebar></aside>
+
+    <main class="main" id="main">
+      <div class="page-head">
+        <div>
+          <h1>Estrategias</h1>
+          <p>Empresas recomendadas según tu perfil de riesgo y tus objetivos de ingreso activo.</p>
+        </div>
+        <span class="chip chip-info" id="chip-perfil">Perfil</span>
+      </div>
+
+      <section class="card" aria-labelledby="t-filtros">
+        <h2 id="t-filtros">Filtros de búsqueda</h2>
+        <form id="form-filtros" class="grid cols-3" style="margin-top:14px;align-items:end">
+          <div class="field" style="margin:0">
+            <label for="f-vol">Volatilidad máxima: <output id="o-vol" for="f-vol">60%</output></label>
+            <input id="f-vol" name="volMax" type="range" min="10" max="60" step="1" value="60" style="accent-color:var(--primary)">
+          </div>
+          <div class="field" style="margin:0">
+            <label for="f-ret">Retorno esperado mínimo (%)</label>
+            <input class="input" id="f-ret" name="retornoMin" type="number" step="0.5" min="0" max="50" placeholder="Ej. 8">
+          </div>
+          <div class="field" style="margin:0">
+            <label for="f-ratio">Ratio riesgo/beneficio mínimo</label>
+            <input class="input" id="f-ratio" name="ratioMin" type="number" step="0.05" min="0" max="2" placeholder="Ej. 0.30" aria-describedby="h-ratio">
+            <span class="hint" id="h-ratio">Retorno esperado ÷ volatilidad.</span>
+          </div>
+        </form>
+      </section>
+
+      <section style="margin-top:24px" aria-labelledby="t-reco" aria-live="polite">
+        <h2 id="t-reco" style="font-family:var(--font);font-size:16px">Recomendaciones priorizadas</h2>
+        <div id="reco-estado"></div>
+        <div class="grid cols-3" id="reco-lista"></div>
+      </section>
+
+      <section class="card" style="margin-top:28px" aria-labelledby="t-tabla">
+        <div class="spread">
+          <div>
+            <h2 id="t-tabla">Tabla comparativa de métricas</h2>
+            <p class="sub">Beta alcista/bajista, volatilidad, dividendos y retorno esperado</p>
+          </div>
+          <div class="search" style="max-width:280px">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+            <label class="sr-only" for="t-buscar">Buscar empresa en la tabla</label>
+            <input class="input" id="t-buscar" type="search" placeholder="Buscar por nombre o ticker…">
+          </div>
+        </div>
+        <div id="tabla-estado" style="margin-top:14px"></div>
+        <div class="table-wrap">
+          <table class="table" id="tabla-metricas">
+            <caption class="sr-only">Métricas financieras por empresa. Los encabezados permiten ordenar.</caption>
+            <thead><tr>
+              <th scope="col" aria-sort="none"><button type="button" data-col="nombre">Empresa</button></th>
+              <th scope="col" aria-sort="none"><button type="button" data-col="variacion">Var. 24h</button></th>
+              <th scope="col" aria-sort="none"><button type="button" data-col="betaAlcista">Beta alcista</button></th>
+              <th scope="col" aria-sort="none"><button type="button" data-col="betaBajista">Beta bajista</button></th>
+              <th scope="col" aria-sort="descending"><button type="button" data-col="volatilidad">Volatilidad</button></th>
+              <th scope="col" aria-sort="none"><button type="button" data-col="dividendos">Dividendos</button></th>
+              <th scope="col" aria-sort="none"><button type="button" data-col="retornoEsperado">Retorno esperado</button></th>
+            </tr></thead>
+            <tbody id="tabla-body"></tbody>
+          </table>
+        </div>
+        <div class="pager">
+          <span id="pag-info" aria-live="polite"></span>
+          <button class="btn btn-sm" type="button" id="pag-prev">Anterior</button>
+          <button class="btn btn-sm" type="button" id="pag-next">Siguiente</button>
+        </div>
+      </section>
+    </main>
+  </div>
+</body>
+</html>

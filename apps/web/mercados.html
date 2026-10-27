@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mercados — Asimetría</title>
+  <meta name="description" content="Dashboard en tiempo real: NASDAQ 100, watchlist y asimetrías detectadas.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap">
+  <link rel="stylesheet" href="assets/css/styles.css">
+  <script defer src="assets/js/ui.js"></script>
+  <script defer src="assets/js/market.js"></script>
+  <script defer src="assets/js/pages/mercados.js"></script>
+</head>
+<body data-protected data-nav="mercados.html">
+  <a class="skip" href="#main">Saltar al contenido</a>
+  <div class="app">
+    <aside class="sidebar" data-sidebar></aside>
+
+    <main class="main with-rail" id="main">
+      <div>
+        <div class="topbar">
+          <div class="search">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+            <label class="sr-only" for="buscar">Buscar activo, ticker o sector</label>
+            <input class="input" id="buscar" type="search" placeholder="Buscar activo, ticker o sector…" autocomplete="off">
+          </div>
+          <span class="spacer"></span>
+          <a class="btn btn-icon" href="alertas.html" aria-label="Alertas" id="btn-alertas"></a>
+          <a class="btn btn-icon" href="estrategias.html" aria-label="Estrategias y tabla de métricas" id="btn-modulos"></a>
+        </div>
+
+        <div class="page-head">
+          <div>
+            <h1>Mercados</h1>
+            <p>Datos en tiempo real · <span id="estado-act" aria-live="off">actualizando…</span></p>
+          </div>
+          <button class="btn btn-primary" type="button" id="btn-anadir">+ Añadir activo</button>
+        </div>
+
+        <div class="notice notice-warn" id="aviso-stale" role="status" hidden></div>
+
+        <section class="card" aria-labelledby="t-indice">
+          <div class="spread" style="align-items:flex-start">
+            <div>
+              <h2 id="t-indice" style="font-family:var(--font-display);font-size:18px">NASDAQ 100 <span class="muted small">· NDX</span></h2>
+              <div class="row" style="gap:12px;margin-top:4px">
+                <span class="big-price mono" id="indice-precio">—</span>
+                <span class="small" id="indice-var">—</span>
+              </div>
+            </div>
+            <div class="range-tabs" role="group" aria-label="Rango del gráfico">
+              <button type="button" data-rango="5">1S</button>
+              <button type="button" data-rango="21" aria-pressed="true">1M</button>
+              <button type="button" data-rango="252">1A</button>
+              <button type="button" data-rango="1260">5A</button>
+            </div>
+          </div>
+          <svg class="chart" id="indice-chart" role="img" aria-label="Evolución del NASDAQ 100"></svg>
+        </section>
+
+        <section style="margin-top:28px" aria-labelledby="t-watch">
+          <h2 id="t-watch" style="font-family:var(--font);font-size:16px">Watchlist</h2>
+          <div class="table-wrap">
+            <table class="table">
+              <caption class="sr-only">Activos en tu lista de seguimiento con precio, variación, beta, volatilidad y tendencia</caption>
+              <thead><tr><th scope="col">Activo</th><th scope="col">Precio</th><th scope="col">Var. 24h</th><th scope="col">Beta</th><th scope="col">Volatilidad</th><th scope="col">Tendencia</th><th scope="col"><span class="sr-only">Favorito</span></th></tr></thead>
+              <tbody id="watch-body"></tbody>
+            </table>
+          </div>
+          <p class="empty" id="watch-empty" hidden>No se encontraron resultados.</p>
+        </section>
+      </div>
+
+      <aside class="rail" aria-label="Resumen">
+        <section class="card alert-card" aria-labelledby="t-asim">
+          <h2 id="t-asim"><span aria-hidden="true">⚡</span> Asimetría detectada</h2>
+          <p id="asim-texto"></p>
+          <a class="btn btn-sm" id="asim-link" href="analisis.html" style="background:var(--surface-2)">Ver análisis completo →</a>
+        </section>
+        <section aria-labelledby="t-mov">
+          <h2 id="t-mov">Mayores movimientos</h2>
+          <ul class="movers" id="movers"></ul>
+        </section>
+        <section aria-labelledby="t-dist">
+          <h2 id="t-dist">Distribución de tu portafolio</h2>
+          <div class="row" style="gap:20px;margin-top:12px">
+            <div class="donut" id="donut"><div><strong id="donut-total">—</strong><span>valor total</span></div></div>
+            <ul class="legend" id="donut-legend" style="flex-direction:column;gap:8px"></ul>
+          </div>
+        </section>
+      </aside>
+    </main>
+  </div>
+
+  <dialog id="dlg-anadir" class="dialog-sm" aria-labelledby="t-anadir">
+    <form method="dialog" class="dialog-body" id="form-anadir">
+      <h2 id="t-anadir" style="font-size:20px">Añadir activo a tu watchlist</h2>
+      <div class="field">
+        <label for="sel-activo">Activo</label>
+        <select class="input" id="sel-activo" name="ticker" required></select>
+      </div>
+      <p class="error-text" id="anadir-error" role="alert"></p>
+      <div class="row" style="justify-content:flex-end">
+        <button class="btn" value="cancelar" formnovalidate>Cancelar</button>
+        <button class="btn btn-primary" value="ok">Añadir</button>
+      </div>
+    </form>
+  </dialog>
+</body>
+</html>

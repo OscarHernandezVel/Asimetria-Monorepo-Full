@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Configuración — Asimetría</title>
+  <meta name="description" content="Perfil de riesgo, quiz, auditoría de eventos y preferencias de la cuenta.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap">
+  <link rel="stylesheet" href="assets/css/styles.css">
+  <script defer src="assets/js/ui.js"></script>
+  <script defer src="assets/js/market.js"></script>
+  <script defer src="assets/js/pages/configuracion.js"></script>
+</head>
+<body data-protected data-nav="configuracion.html">
+  <a class="skip" href="#main">Saltar al contenido</a>
+  <div class="app">
+    <aside class="sidebar" data-sidebar></aside>
+
+    <main class="main" id="main">
+      <div class="page-head">
+        <div><h1>Configuración</h1><p>Tu cuenta, perfil de riesgo y trazabilidad.</p></div>
+        <button class="btn" type="button" id="btn-salir">Cerrar sesión</button>
+      </div>
+
+      <div class="grid cols-2" style="align-items:start">
+        <section class="card" aria-labelledby="t-cuenta">
+          <h2 id="t-cuenta">Mi cuenta</h2>
+          <dl class="grid" style="grid-template-columns:auto 1fr;gap:10px 18px;margin:16px 0 0;font-size:14px">
+            <dt class="muted">Nombre</dt><dd style="margin:0" id="c-nombre"></dd>
+            <dt class="muted">Correo</dt><dd style="margin:0" id="c-email"></dd>
+            <dt class="muted">Perfil de riesgo</dt><dd style="margin:0"><span class="chip chip-info" id="c-perfil"></span></dd>
+            <dt class="muted">Plan</dt><dd style="margin:0"><span id="c-plan"></span> · <a href="precios.html">Cambiar plan</a></dd>
+            <dt class="muted">Sesión expira</dt><dd style="margin:0" id="c-exp"></dd>
+          </dl>
+        </section>
+
+        <section class="card" id="sec-fallos" aria-labelledby="t-sim" hidden>
+          <h2 id="t-sim">Inyección de fallos (pruebas de fiabilidad)</h2>
+          <p class="sub">Solo en modo demo. Afecta al servidor: el worker deja de recibir precios o de enviar correos (RNF-06, HU-06 CA-4). Para HU-10 CA-5 detén la API: <code>docker compose stop api</code>.</p>
+          <label class="toggle-row"><span>Proveedor bursátil caído</span><input class="switch" type="checkbox" data-sim="proveedor_caido"></label>
+          <label class="toggle-row"><span>Servicio de correo caído</span><input class="switch" type="checkbox" data-sim="correo_caido"></label>
+        </section>
+      </div>
+
+      <section class="card quiz" id="quiz" style="margin-top:24px" aria-labelledby="t-quiz" tabindex="-1">
+        <h2 id="t-quiz">Quiz de perfil de riesgo</h2>
+        <p class="sub" style="margin-bottom:16px">Responde todas las preguntas; te clasificaremos como conservador, moderado o agresivo.</p>
+        <form id="form-quiz" novalidate>
+          <div id="preguntas" class="grid cols-2" style="gap:0 16px"></div>
+          <p class="error-text" id="quiz-error" role="alert"></p>
+          <button class="btn btn-primary" type="submit">Calcular mi perfil</button>
+        </form>
+      </section>
+
+      <section class="card" style="margin-top:24px" aria-labelledby="t-audit">
+        <div class="spread">
+          <div><h2 id="t-audit">Registro de auditoría</h2><p class="sub">Tus eventos críticos registrados por el servidor · UTC · retención 90 días (RNF-04)</p></div>
+          <button class="btn btn-sm" type="button" id="btn-export">Descargar JSON</button>
+        </div>
+        <div class="table-wrap" style="max-height:340px;overflow:auto;margin-top:12px">
+          <table class="table"><thead><tr><th scope="col">Fecha (UTC)</th><th scope="col">IP</th><th scope="col">Evento</th><th scope="col">Estado</th><th scope="col">Detalle</th></tr></thead>
+          <tbody id="audit-body"></tbody></table>
+        </div>
+      </section>
+
+    </main>
+  </div>
+</body>
+</html>

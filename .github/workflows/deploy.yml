@@ -1,0 +1,79 @@
+# CD: cuando CI pasa en main → construye y publica las imágenes en GHCR → despliega por SSH al servidor.
+# El despliegue solo corre si están configuradas la variable DEPLOY_HOST y los secretos (docs/DESPLIEGUE.md §6).
+name: Deploy
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:   # despliegue manual desde la pestaña Actions
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: deploy-produccion
+  cancel-in-progress: false   # nunca cortar un despliegue a medias
+
+env:
+  SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
+
+jobs:
+  imagenes:
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: "${{ env.SHA }}" }
+      - name: Registro en minúsculas (GHCR lo exige)
+        run: echo "REGISTRO=ghcr.io/${GITHUB_REPOSITORY_OWNER,,}" >> "$GITHUB_ENV"
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Imagen API
+        uses: docker/build-push-action@v6
+        with:
+          context: apps/api
+          push: true
+          tags: ${{ env.REGISTRO }}/asimetria-api:${{ env.SHA }},${{ env.REGISTRO }}/asimetria-api:latest
+          labels: org.opencontainers.image.source=https://github.com/${{ github.repository }}
+          cache-from: type=gha,scope=api
+          cache-to: type=gha,scope=api,mode=max
+      - name: Imagen web
+        uses: docker/build-push-action@v6
+        with:
+          context: apps/web
+          push: true
+          tags: ${{ env.REGISTRO }}/asimetria-web:${{ env.SHA }},${{ env.REGISTRO }}/asimetria-web:latest
+          labels: org.opencontainers.image.source=https://github.com/${{ github.repository }}
+          cache-from: type=gha,scope=web
+          cache-to: type=gha,scope=web,mode=max
+
+  desplegar:
+    needs: imagenes
+    if: vars.DEPLOY_HOST != ''
+    runs-on: ubuntu-latest
+    environment:
+      name: produccion
+      url: https://${{ vars.DOMINIO }}
+    steps:
+      - name: Clave SSH (solo en memoria del runner)
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/id_ed25519 && chmod 600 ~/.ssh/id_ed25519
+          printf '%s\n' "${{ secrets.DEPLOY_KNOWN_HOSTS }}" > ~/.ssh/known_hosts
+      - name: Desplegar ${{ env.SHA }}
+        run: |
+          ssh "${{ vars.DEPLOY_USER }}@${{ vars.DEPLOY_HOST }}" \
+            "cd /opt/asimetria && git fetch --quiet origin main && git checkout --quiet --detach '${SHA}' && TAG='${SHA}' ./deploy/desplegar.sh"
+      - name: Verificar en producción
+        run: |
+          for i in $(seq 1 10); do
+            curl -fsS "https://${{ vars.DOMINIO }}/health" && exit 0
+            sleep 6
+          done
+          echo "La verificación falló: revierte con TAG=<sha anterior> ./deploy/desplegar.sh" && exit 1

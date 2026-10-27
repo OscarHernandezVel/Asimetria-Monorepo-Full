@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Análisis de asimetría — Asimetría</title>
+  <meta name="description" content="Beta alcista y bajista, rendimiento comparado y desglose de asimetría frente al NASDAQ 100.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap">
+  <link rel="stylesheet" href="assets/css/styles.css">
+  <script defer src="assets/js/ui.js"></script>
+  <script defer src="assets/js/market.js"></script>
+  <script defer src="assets/js/pages/analisis.js"></script>
+</head>
+<body data-protected data-nav="mercados.html">
+  <a class="skip" href="#main">Saltar al contenido</a>
+  <div class="app">
+    <aside class="sidebar" data-sidebar></aside>
+
+    <main class="main" id="main">
+      <nav class="breadcrumb" aria-label="Ruta de navegación">
+        <ol>
+          <li><a href="mercados.html">Mercados</a></li>
+          <li><a href="estrategias.html">Comportamientos asimétricos</a></li>
+          <li aria-current="page" id="bc-actual">NASDAQ 100 vs RiTech S.A.S</li>
+        </ol>
+      </nav>
+
+      <div class="page-head">
+        <div class="row" style="gap:14px;align-items:center">
+          <div class="pair" aria-hidden="true"><span class="avatar" style="--c:var(--primary)">IX</span><span class="avatar" id="av-activo">RT</span></div>
+          <div>
+            <h1 id="titulo">NASDAQ 100 vs. RiTech S.A.S</h1>
+            <p>Evaluación de comportamiento asimétrico · ventana de 90 días</p>
+          </div>
+        </div>
+        <div class="row">
+          <label class="sr-only" for="sel-activo">Activo a comparar</label>
+          <select class="input" id="sel-activo" style="width:auto;min-height:44px"></select>
+          <a class="btn" id="lnk-backtest" href="portafolio.html">+ Simular backtesting</a>
+          <a class="btn btn-primary" id="lnk-alerta" href="alertas.html">Crear alerta</a>
+        </div>
+      </div>
+
+      <div class="notice notice-error" id="aviso-datos" role="alert" hidden></div>
+
+      <div class="with-rail">
+        <div class="stack">
+          <section class="card" aria-labelledby="t-rend">
+            <h2 id="t-rend">Rendimiento comparado</h2>
+            <p class="sub">Variación porcentual acumulada, base 100</p>
+            <ul class="legend"><li style="--c:var(--pink)" id="leg-activo">RiTech S.A.S</li><li style="--c:var(--primary)">NASDAQ 100</li></ul>
+            <svg class="chart chart-lg" id="chart-rend" role="img" aria-label="Rendimiento acumulado base 100 de los últimos 90 días"></svg>
+            <div class="grid cols-4" style="margin-top:18px">
+              <div class="stat"><span class="label" id="lbl-ret">Retorno</span><span class="value" id="st-ret">—</span></div>
+              <div class="stat"><span class="label">Retorno NASDAQ</span><span class="value" id="st-ix">—</span></div>
+              <div class="stat"><span class="label">Alfa generado</span><span class="value" id="st-alfa">—</span></div>
+              <div class="stat"><span class="label">Máx. drawdown</span><span class="value" id="st-dd">—</span></div>
+            </div>
+          </section>
+
+          <section class="card" aria-labelledby="t-desg">
+            <h2 id="t-desg">Desglose de asimetría</h2>
+            <p class="sub">Comparación de movimientos en sesiones alcistas y bajistas del índice</p>
+            <div class="table-wrap">
+              <table class="table">
+                <thead><tr><th scope="col">Condición del mercado</th><th scope="col">NASDAQ 100</th><th scope="col" id="th-activo">RiTech S.A.S</th><th scope="col">Ratio de asimetría</th></tr></thead>
+                <tbody id="desglose"></tbody>
+              </table>
+            </div>
+          </section>
+        </div>
+
+        <aside class="rail" aria-label="Sensibilidad y alertas">
+          <section class="card" aria-labelledby="t-beta">
+            <h2 id="t-beta">Beta personalizado</h2>
+            <p class="sub" id="beta-sub">Sensibilidad frente al NASDAQ 100</p>
+            <p class="beta-value" id="beta-valor">—</p>
+            <p class="small muted" id="beta-texto"></p>
+            <div class="grid" style="grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+              <div class="stat"><span class="label">β alcista</span><span class="value up" id="beta-up">—</span></div>
+              <div class="stat"><span class="label">β bajista</span><span class="value down" id="beta-down">—</span></div>
+            </div>
+            <p class="small muted" style="margin-bottom:6px">Dispersión de retornos diarios</p>
+            <svg id="scatter" role="img" aria-label="Dispersión de retornos diarios del activo frente al índice con las rectas de beta alcista y bajista" style="width:100%;background:var(--surface-2);border-radius:10px"></svg>
+            <div class="spread small" style="margin-top:10px"><span class="muted">Correlación (r)</span><strong id="corr">—</strong></div>
+          </section>
+
+          <section class="card" style="border-color:rgb(0 212 255 / .35)" aria-labelledby="t-cfg">
+            <h2 id="t-cfg">Configurar alerta de asimetría</h2>
+            <p class="small muted" id="cfg-texto" style="margin-top:6px">Recibe una notificación cuando el activo se desvíe del NASDAQ 100 más allá del umbral definido.</p>
+            <label class="toggle-row"><span>Notificar en desviaciones &gt; 1.5×</span><input class="switch" type="checkbox" id="sw-desv"></label>
+            <label class="toggle-row"><span>Resumen diario por correo</span><input class="switch" type="checkbox" id="sw-resumen"></label>
+          </section>
+        </aside>
+      </div>
+    </main>
+  </div>
+</body>
+</html>

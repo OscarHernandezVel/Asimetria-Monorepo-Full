@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Asimetría — Iniciar sesión o crear cuenta</title>
+  <meta name="description" content="Accede a Asimetría o crea tu cuenta para detectar oportunidades de inversión asimétricas.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap">
+  <link rel="stylesheet" href="assets/css/styles.css">
+  <script defer src="assets/js/ui.js"></script>
+  <script defer src="assets/js/market.js"></script>
+  <script defer src="assets/js/pages/auth.js"></script>
+</head>
+<body>
+  <a class="skip" href="#main">Saltar al formulario</a>
+  <div class="auth">
+    <aside class="auth-side" aria-label="Asimetría">
+      <a class="brand" href="index.html"><span class="logo" aria-hidden="true">A</span>Asimetría</a>
+      <h2>La detección de comportamientos asimétricos es la innovación central del sistema.</h2>
+      <p class="muted small">Motor de estrategias · Sistema de Análisis de Inversiones Bursátiles</p>
+      <div class="card" style="margin-top:24px;max-width:440px">
+        <table class="small">
+          <caption class="sr-only">Ejemplo de comportamiento asimétrico de RiTech</caption>
+          <thead><tr><th scope="col" style="text-align:left;font-weight:500" class="muted">Activo</th><th scope="col" style="text-align:right;font-weight:500" class="muted">Var. vs NASDAQ 100</th></tr></thead>
+          <tbody>
+            <tr><td style="padding:10px 0;border-top:1px solid var(--border)"><strong>RiTech S.A.S</strong><br><span class="muted">NASDAQ +2.0%</span></td><td class="up" style="text-align:right;font-weight:700">+4.0%</td></tr>
+            <tr><td style="padding:10px 0;border-top:1px solid var(--border)"><strong>RiTech S.A.S</strong><br><span class="muted">NASDAQ −2.0%</span></td><td class="down" style="text-align:right;font-weight:700">−2.5%</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </aside>
+
+    <main class="auth-main" id="main">
+      <div class="auth-form">
+        <div class="tabs" role="tablist" aria-label="Acceso">
+          <button role="tab" id="tab-login" aria-controls="panel-login" aria-selected="true" type="button">Iniciar sesión</button>
+          <button role="tab" id="tab-registro" aria-controls="panel-registro" aria-selected="false" tabindex="-1" type="button">Crear cuenta</button>
+        </div>
+
+        <section id="panel-login" role="tabpanel" aria-labelledby="tab-login">
+          <h1>Bienvenido de nuevo</h1>
+          <p class="muted">Ingresa para ver tus mercados y estrategias.</p>
+          <form id="form-login" novalidate>
+            <div class="field">
+              <label for="login-email">Correo electrónico</label>
+              <input class="input" id="login-email" name="email" type="email" autocomplete="email" required placeholder="oscar@correo.com">
+            </div>
+            <div class="field">
+              <label for="login-pass">Contraseña</label>
+              <input class="input" id="login-pass" name="password" type="password" autocomplete="current-password" required>
+            </div>
+            <p class="error-text" id="login-error" role="alert"></p>
+            <button class="btn btn-primary btn-block" type="submit">Iniciar sesión</button>
+          </form>
+          <p class="muted small" style="text-align:center;margin-top:18px">¿Solo quieres explorar? <button class="link-btn" type="button" id="btn-demo">Entrar con la cuenta demo</button></p>
+        </section>
+
+        <section id="panel-registro" role="tabpanel" aria-labelledby="tab-registro" hidden>
+          <h1>Crea tu cuenta</h1>
+          <p class="muted">Empieza a detectar oportunidades en minutos.</p>
+          <form id="form-registro" novalidate>
+            <div class="field">
+              <label for="reg-nombre">Nombre completo</label>
+              <input class="input" id="reg-nombre" name="nombre" autocomplete="name" required maxlength="80" placeholder="Oscar Hernández">
+            </div>
+            <div class="field">
+              <label for="reg-email">Correo electrónico</label>
+              <input class="input" id="reg-email" name="email" type="email" autocomplete="email" required maxlength="255" placeholder="oscar@correo.com">
+            </div>
+            <div class="field">
+              <label for="reg-pass">Contraseña</label>
+              <input class="input" id="reg-pass" name="password" type="password" autocomplete="new-password" required minlength="8" aria-describedby="reg-pass-hint">
+              <span class="hint" id="reg-pass-hint">Mínimo 8 caracteres, con al menos una letra y un número.</span>
+            </div>
+            <fieldset class="segmented" aria-describedby="perfil-hint">
+              <legend>Perfil de riesgo</legend>
+              <input type="radio" name="perfil" id="p-con" value="CONSERVADOR"><label for="p-con">Conservador</label>
+              <input type="radio" name="perfil" id="p-mod" value="MODERADO"><label for="p-mod">Moderado</label>
+              <input type="radio" name="perfil" id="p-agr" value="AGRESIVO"><label for="p-agr">Agresivo</label>
+            </fieldset>
+            <p class="hint" id="perfil-hint" style="margin:-8px 0 16px">¿No estás seguro? Déjalo vacío y responde el quiz de perfil después de registrarte.</p>
+            <label class="check" style="margin-bottom:16px"><input type="checkbox" name="terminos" required> Acepto los términos y la política de privacidad</label>
+            <p class="error-text" id="reg-error" role="alert"></p>
+            <button class="btn btn-primary btn-block" type="submit">Crear cuenta</button>
+          </form>
+          <p class="divider">o continúa con</p>
+          <div class="grid" style="grid-template-columns:1fr 1fr">
+            <button class="btn" type="button" data-oauth="Google">Google</button>
+            <button class="btn" type="button" data-oauth="Apple">Apple</button>
+          </div>
+          <p class="muted small" style="text-align:center;margin-top:18px">¿Ya tienes cuenta? <button class="link-btn" type="button" data-ir="login">Inicia sesión</button></p>
+        </section>
+      </div>
+    </main>
+  </div>
+</body>
+</html>

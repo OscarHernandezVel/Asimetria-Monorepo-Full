@@ -1,0 +1,17 @@
+node_modules/
+coverage/
+.env
+.env.*
+!.env.example
+*.log
+.DS_Store
+Thumbs.db
+.claude/
+.venv/
+__pycache__/
+*.py[cod]
+*.db
+.coverage
+.pytest_cache/
+backups/
+*.dump

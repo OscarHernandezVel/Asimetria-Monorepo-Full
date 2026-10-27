@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Portafolio y backtesting — Asimetría</title>
+  <meta name="description" content="Simula cuánto habrías ganado o perdido frente al NASDAQ 100 y administra tu portafolio teórico.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap">
+  <link rel="stylesheet" href="assets/css/styles.css">
+  <script defer src="assets/js/ui.js"></script>
+  <script defer src="assets/js/market.js"></script>
+  <script defer src="assets/js/pages/portafolio.js"></script>
+</head>
+<body data-protected data-nav="portafolio.html">
+  <a class="skip" href="#main">Saltar al contenido</a>
+  <div class="app">
+    <aside class="sidebar" data-sidebar></aside>
+
+    <main class="main" id="main">
+      <div class="page-head">
+        <div>
+          <h1>Portafolio</h1>
+          <p>Simula estrategias sin arriesgar dinero real y haz seguimiento a tu portafolio teórico.</p>
+        </div>
+      </div>
+
+      <div class="grid" style="grid-template-columns:minmax(0,360px) minmax(0,1fr);align-items:start" id="bt-grid">
+        <section class="card" aria-labelledby="t-bt">
+          <h2 id="t-bt">Simulador de backtesting</h2>
+          <p class="sub">Invierte un monto al inicio del periodo y compáralo con el NASDAQ 100.</p>
+          <form id="form-bt" novalidate style="margin-top:16px">
+            <div class="field">
+              <label for="bt-activo">Activo</label>
+              <select class="input" id="bt-activo" name="ticker"></select>
+            </div>
+            <div class="field">
+              <label for="bt-monto">Monto inicial (USD)</label>
+              <input class="input" id="bt-monto" name="monto" type="number" inputmode="decimal" min="0.01" step="0.01" value="1000" required>
+            </div>
+            <div class="grid" style="grid-template-columns:1fr 1fr;gap:10px">
+              <div class="field"><label for="bt-ini">Desde</label><input class="input" id="bt-ini" name="inicio" type="date" required></div>
+              <div class="field"><label for="bt-fin">Hasta</label><input class="input" id="bt-fin" name="fin" type="date" required></div>
+            </div>
+            <p class="error-text" id="bt-error" role="alert"></p>
+            <button class="btn btn-primary btn-block" type="submit">Ejecutar simulación</button>
+          </form>
+          <p class="small muted" style="margin:16px 0 8px">Casos de prueba del documento (RiTech, 1.000 USD):</p>
+          <div class="row">
+            <button class="btn btn-sm" type="button" data-caso="alcista">Día alcista (+2 %)</button>
+            <button class="btn btn-sm" type="button" data-caso="bajista">Día bajista (−2 %)</button>
+          </div>
+        </section>
+
+        <section class="card" aria-labelledby="t-res" aria-live="polite">
+          <h2 id="t-res">Resultado</h2>
+          <p class="sub" id="res-sub">Ejecuta una simulación para ver el resultado.</p>
+          <div class="grid cols-4" style="margin:16px 0">
+            <div class="stat"><span class="label">Valor final</span><span class="value" id="r-final">—</span></div>
+            <div class="stat"><span class="label">Retorno</span><span class="value" id="r-ret">—</span></div>
+            <div class="stat"><span class="label">Mismo monto en NASDAQ 100</span><span class="value" id="r-ix">—</span></div>
+            <div class="stat"><span class="label">Diferencia</span><span class="value" id="r-dif">—</span></div>
+          </div>
+          <ul class="legend"><li style="--c:var(--pink)">Portafolio</li><li style="--c:var(--primary)">NASDAQ 100</li></ul>
+          <svg class="chart" id="r-chart" role="img" aria-label="Valor del portafolio frente al índice durante el periodo simulado"></svg>
+          <details style="margin-top:14px">
+            <summary style="cursor:pointer;font-weight:600">Ver datos tabulados</summary>
+            <div class="table-wrap" style="max-height:280px;overflow:auto;margin-top:10px">
+              <table class="table"><thead><tr><th scope="col">Fecha</th><th scope="col">Valor portafolio</th><th scope="col">Valor índice</th></tr></thead><tbody id="r-tabla"></tbody></table>
+            </div>
+          </details>
+        </section>
+      </div>
+
+      <section class="card" style="margin-top:24px" aria-labelledby="t-hist">
+        <h2 id="t-hist">Historial de simulaciones</h2>
+        <div class="table-wrap"><table class="table"><thead><tr><th scope="col">Ejecución</th><th scope="col">Activo</th><th scope="col">Periodo</th><th scope="col">Monto</th><th scope="col">Valor final</th></tr></thead><tbody id="hist-body"></tbody></table></div>
+      </section>
+
+      <section class="card" style="margin-top:24px" aria-labelledby="t-port">
+        <div class="spread">
+          <div><h2 id="t-port">Portafolio teórico y lista de seguimiento</h2><p class="sub">Edita la cantidad de acciones o quita empresas de tu lista.</p></div>
+          <form class="row" id="form-add">
+            <label class="sr-only" for="add-activo">Empresa a agregar</label>
+            <select class="input" id="add-activo" style="width:auto"></select>
+            <button class="btn btn-sm btn-primary" type="submit">Agregar</button>
+          </form>
+        </div>
+        <div class="table-wrap" style="margin-top:12px">
+          <table class="table"><thead><tr><th scope="col">Activo</th><th scope="col">Precio</th><th scope="col">Cantidad</th><th scope="col">Valor</th><th scope="col">Peso</th><th scope="col"><span class="sr-only">Acciones</span></th></tr></thead>
+          <tbody id="port-body"></tbody>
+          <tfoot><tr><th scope="row" colspan="3">Total</th><td class="mono" id="port-total" colspan="3"></td></tr></tfoot></table>
+        </div>
+      </section>
+    </main>
+  </div>
+</body>
+</html>
