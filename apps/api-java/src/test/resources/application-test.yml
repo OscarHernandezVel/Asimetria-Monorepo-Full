@@ -1,0 +1,19 @@
+# Pruebas: PostgreSQL real (Testcontainers), caché y almacén en memoria, sin tareas programadas,
+# bcrypt rápido y proveedor simulado sin fallos aleatorios.
+spring:
+  cache:
+    type: simple
+logging:
+  structured:
+    format:
+      console: ""
+asimetria:
+  jwt:
+    secreto: secreto-de-pruebas-con-al-menos-32-caracteres
+  bcrypt-costo: 4
+  almacen: memoria
+  tareas-habilitadas: false
+  herramientas-prueba: true
+  prob-fallo-simulado: 0
+  limite-tasa:
+    habilitado: false
