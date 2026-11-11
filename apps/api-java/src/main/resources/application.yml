@@ -1,0 +1,98 @@
+# Configuración del backend. Todo valor sensible llega por variables de entorno (12-factor):
+# en local desde .env (docker compose) y en AWS desde Secrets Manager (inyectado por ECS).
+server:
+  port: 8000
+  shutdown: graceful            # ECS drena conexiones antes de detener una tarea (despliegues sin errores)
+  compression:
+    enabled: true
+    mime-types: application/json
+    min-response-size: 1KB
+  tomcat:
+    use-relative-redirects: true   # /docs → swagger-ui sin filtrar el host interno del ALB detrás de CloudFront
+
+spring:
+  application:
+    name: asimetria-api
+  threads:
+    virtual:
+      enabled: true             # Java 21: hilos virtuales para E/S (alta concurrencia con poca memoria)
+  lifecycle:
+    timeout-per-shutdown-phase: 20s
+  jackson:
+    property-naming-strategy: SNAKE_CASE   # mismo contrato JSON que consume el frontend
+  datasource:
+    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/asimetria}
+    username: ${DATABASE_USER:asimetria}
+    password: ${DATABASE_PASSWORD:asimetria}
+    hikari:
+      maximum-pool-size: ${DB_POOL:20}
+      connection-timeout: 5000  # agotado el pool → 503 en 5 s, nunca un cuelgue
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate        # Hibernate verifica que las entidades coincidan con el esquema de Flyway
+  flyway:
+    baseline-on-migrate: true   # adopta la base creada por la versión anterior (Python) como V2
+    baseline-version: 2
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      ssl:
+        enabled: ${REDIS_SSL:false}  # ElastiCache con cifrado en tránsito
+      timeout: 500ms
+      connect-timeout: 500ms
+  cache:
+    type: ${CACHE_TIPO:redis}
+    cache-names: metricas,recomendaciones,analisis,destacado
+    redis:
+      time-to-live: ${CACHE_TTL:300}s
+
+logging:
+  structured:
+    format:
+      console: ${LOG_FORMATO:ecs}    # JSON estructurado → CloudWatch Logs Insights
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: never
+
+springdoc:
+  api-docs:
+    path: /openapi.json
+  swagger-ui:
+    path: /docs
+
+asimetria:
+  jwt:
+    secreto: ${JWT_SECRET:}
+    minutos: ${JWT_MINUTOS:120}
+  bcrypt-costo: ${BCRYPT_ROUNDS:12}
+  proveedor: ${PROVEEDOR:simulado}
+  alphavantage:
+    clave: ${ALPHAVANTAGE_API_KEY:}
+    limite-diario: ${AV_LIMITE_DIARIO:25}
+  sendgrid:
+    clave: ${SENDGRID_API_KEY:}
+    remitente: ${CORREO_REMITENTE:alertas@asimetria.app}
+  intervalo-cotizaciones: ${INTERVALO_COTIZACIONES:5s}
+  almacen: ${ALMACEN:redis}
+  modo-demo: ${MODO_DEMO:true}
+  herramientas-prueba: ${HERRAMIENTAS_PRUEBA:false}
+  tareas-habilitadas: ${TAREAS_HABILITADAS:true}
+  confiar-proxy: ${CONFIAR_PROXY:true}
+  prob-fallo-simulado: ${PROB_FALLO_SIMULADO:0.03}
+  limite-tasa:
+    habilitado: ${LIMITE_TASA:true}
+    por-segundo: 15
+    rafaga: 40
+    auth-por-minuto: 10
+    auth-rafaga: 6
