@@ -8,18 +8,17 @@ Este documento explica cómo publicar Asimetría con **dominio propio y HTTPS**,
                  GitHub (código · Actions · GHCR)
                    │ push a main → CI (pruebas, cobertura ≥ 80 %) → Deploy (imágenes) → SSH
                    ▼
-  Internet ─HTTPS/TLS 1.3, HTTP/3─▶ Caddy ─▶ Nginx (web + límites por IP) ─▶ FastAPI ×N procesos
-            (certificados automáticos)                                         │      │
-                                                          PostgreSQL+TimescaleDB   Redis ◀─ Celery worker/beat
-                                                          + backup diario                    │
-                                                                                Alpha Vantage · SendGrid
+  Internet ─HTTPS/TLS 1.3, HTTP/3─▶ Caddy ─▶ Nginx (web + límites por IP) ─▶ API Java (Spring Boot)
+            (certificados automáticos)                                         │      │   └ tareas programadas
+                                                          PostgreSQL+TimescaleDB   Redis      │
+                                                          + backup diario           Alpha Vantage · SendGrid
 ```
 
 | Criterio | Cómo se cumple |
 |---|---|
 | **Dominio seguro** | Caddy emite y renueva solo los certificados Let's Encrypt; **solo TLS 1.3** (RNF-03), HSTS y redirección HTTP→HTTPS. Nginx añade CSP, `X-Frame-Options` y límites por IP (15 req/s a la API, 10 req/min a la autenticación). Cortafuegos con solo 22/80/443, SSH sin contraseñas, actualizaciones de seguridad automáticas. Solo Caddy queda expuesto: la BD, Redis y la API no tienen puertos públicos. |
-| **Alto rendimiento** | HTTP/3 y compresión zstd/gzip en el borde; respuestas de Redis servidas sin re-serializar; P95 medido de 438–646 ms con 100 usuarios concurrentes (ver `ISO-25010.md` §1). Las imágenes vienen precompiladas desde GHCR (el servidor no compila). |
-| **Escalabilidad** | La API no tiene estado (JWT + Redis compartido), así que escala en vertical (más CPU → más `UVICORN_WORKERS`) y en horizontal (más contenedores o más servidores). Ruta de crecimiento en §9. |
+| **Alto rendimiento** | HTTP/3 y compresión zstd/gzip en el borde; caché Redis de métricas y recomendaciones; P95 medido de 438–646 ms con 100 usuarios concurrentes en la v1 (ver `ISO-25010.md` §1). Las imágenes vienen precompiladas desde GHCR (el servidor no compila). |
+| **Escalabilidad** | La API no tiene estado (JWT + Redis compartido), así que escala en vertical (más CPU; la JVM usa hilos virtuales) y en horizontal (más contenedores o más servidores; las tareas programadas usan un bloqueo en PostgreSQL y corren una sola vez). Ruta de crecimiento en §9. |
 | **Mantenible a corto plazo** | Un solo servidor, el mismo `docker-compose.yml` de desarrollo más un *override* de producción, despliegue automático en cada push y *rollback* con un comando. |
 
 **¿Por qué no solo GitHub Pages?** Pages únicamente sirve archivos estáticos: no puede ejecutar la API, la base de datos ni los workers. GitHub aloja el **código**, la **integración continua** y las **imágenes** (GHCR); el sistema **corre** en el servidor.
@@ -52,7 +51,7 @@ En Cloudflare deja la nube en **gris** (*DNS only*) para que Caddy obtenga el ce
 Conéctate como root con `ssh root@IP` y ejecuta el script (revísalo antes):
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/OscarHernandezVel/Asimetria-Monorepo/main/deploy/preparar-servidor.sh -o p.sh && less p.sh && sh p.sh
+curl -fsSL https://raw.githubusercontent.com/OscarHernandezVel/Asimetria-Monorepo-Full/main/deploy/preparar-servidor.sh -o p.sh && less p.sh && sh p.sh
 ```
 
 Instala Docker, crea el usuario `deploy`, desactiva el login con contraseña y el de root, activa el cortafuegos y `fail2ban`, y clona el repo en `/opt/asimetria`. Desde aquí entra como `ssh deploy@IP`.
@@ -68,7 +67,7 @@ Valores obligatorios en producción:
 - `POSTGRES_PASSWORD` y `JWT_SECRET`: nuevos y largos. Genéralos con `openssl rand -base64 48`; **no reutilices los de tu PC**.
 - `DOMINIO=tudominio.com` y `ACME_EMAIL=tu-correo`.
 - `HERRAMIENTAS_PRUEBA=0`. `MODO_DEMO=1` solo si quieres el botón de demo pública.
-- `BCRYPT_ROUNDS=12` y `UVICORN_WORKERS=2` para un servidor de 2 vCPU.
+- `BCRYPT_ROUNDS=12` y `DB_POOL=20`.
 - `SENDGRID_API_KEY`, `CORREO_REMITENTE` y `ALPHAVANTAGE_API_KEY`: los mismos de tu `.env` local o, mejor, claves nuevas exclusivas para producción.
 
 ## 6. Conectar GitHub Actions con el servidor
@@ -115,10 +114,10 @@ El primer arranque crea el esquema y carga los datos; tarda ~1–2 min. Luego co
 |---|---|
 | Alias útil | `alias dc='docker compose -f docker-compose.yml -f docker-compose.prod.yml'` |
 | Estado | `dc ps` |
-| Logs (JSON: auditoría y llamadas externas) | `dc logs -f api worker` |
+| Logs (JSON: auditoría y llamadas externas) | `dc logs -f api` |
 | **Rollback** | `TAG=<sha anterior> ./deploy/desplegar.sh` (los sha están en *Actions* o en `git log`) |
 | Ver backups | `ls -lh backups/` (uno diario, 7 días de retención) |
-| **Restaurar** un backup | `dc stop api worker beat` → `dc exec -T db psql -U asimetria -d asimetria -c "SELECT timescaledb_pre_restore();"` → `dc exec -T db pg_restore -U asimetria -d asimetria --clean --if-exists < backups/asimetria-AAAA-MM-DD.dump` → `dc exec -T db psql -U asimetria -d asimetria -c "SELECT timescaledb_post_restore();"` → `dc up -d` |
+| **Restaurar** un backup | `dc stop api` → `dc exec -T db psql -U asimetria -d asimetria -c "SELECT timescaledb_pre_restore();"` → `dc exec -T db pg_restore -U asimetria -d asimetria --clean --if-exists < backups/asimetria-AAAA-MM-DD.dump` → `dc exec -T db psql -U asimetria -d asimetria -c "SELECT timescaledb_post_restore();"` → `dc up -d` |
 | Rotar un secreto | Editar `.env` y ejecutar `dc up -d` (cambiar `JWT_SECRET` cierra todas las sesiones) |
 
 Los logs rotan solos (10 MB × 5 archivos por servicio), así que el disco no se llena.
@@ -127,9 +126,9 @@ Los logs rotan solos (10 MB × 5 archivos por servicio), así que el disco no se
 
 Cada paso se da solo cuando las métricas lo pidan: P95 de `/metrics/` mayor de 1 s, CPU sostenida por encima del 70 % o RAM por encima del 80 %.
 
-1. **Vertical (minutos):** redimensiona el VPS (4 → 8 vCPU) y sube `UVICORN_WORKERS`.
-2. **Más contenedores en el mismo servidor:** `dc up -d --scale api=3 --scale worker=2`. Nginx reparte entre réplicas porque resuelve `api` por DNS cada 10 s. ⚠️ Conexiones: réplicas × `UVICORN_WORKERS` × 20 ≤ 100 (`max_connections` de PostgreSQL). Al superar ese límite, añade PgBouncer o reduce el pool.
-3. **Datos gestionados:** mueve PostgreSQL a **Timescale Cloud** y Redis a un servicio gestionado (Upstash o Redis Cloud). Solo cambian `DATABASE_URL` y `REDIS_URL`; el código no se toca.
+1. **Vertical (minutos):** redimensiona el VPS (4 → 8 vCPU).
+2. **Más contenedores en el mismo servidor:** `dc up -d --scale api=3`. Nginx reparte entre réplicas porque resuelve `api` por DNS cada 10 s. ⚠️ Conexiones: réplicas × `DB_POOL` ≤ 100 (`max_connections` de PostgreSQL). Al superar ese límite, añade PgBouncer o reduce el pool.
+3. **Datos gestionados:** mueve PostgreSQL a **Timescale Cloud** y Redis a un servicio gestionado (Upstash o Redis Cloud). Solo cambian `DATABASE_URL` y `REDIS_HOST`/`REDIS_PASSWORD`/`REDIS_SSL`; el código no se toca. Para la ruta completa en la nube, ver [AWS.md](AWS.md).
 4. **Varios servidores de API** detrás de un balanceador (el del proveedor o Cloudflare con proxy activado). Es posible porque la API no guarda estado en el servidor.
 5. **CDN:** activar el proxy de Cloudflare (nube naranja) cachea los estáticos en el borde. Antes, configura en Caddy `trusted_proxies` con los rangos de Cloudflare para no perder la IP real en la auditoría.
 
