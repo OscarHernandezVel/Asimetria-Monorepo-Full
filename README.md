@@ -1,4 +1,4 @@
-# Asimetría — Sistema de Inversión y Análisis Bursátil
+# Asimetría — Sistema de Inversión y Análisis Bursátil (velocidad)
 
 Plataforma que detecta **comportamientos asimétricos** de acciones frente al NASDAQ 100. El caso de referencia es RiTech: si el índice sube 2 %, RiTech sube 4 % (β alcista 2.0); si el índice cae 2 %, RiTech solo cae 2.5 % (β bajista 1.25). A partir de ahí recomienda estrategias según el perfil de riesgo, simula inversiones pasadas (*backtesting*) y emite alertas.
 
