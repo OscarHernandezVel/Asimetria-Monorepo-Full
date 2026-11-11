@@ -7,11 +7,7 @@ coverage/
 .DS_Store
 Thumbs.db
 .claude/
-.venv/
-__pycache__/
-*.py[cod]
-*.db
-.coverage
-.pytest_cache/
+target/
+.terraform/
 backups/
 *.dump
