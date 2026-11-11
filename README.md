@@ -9,53 +9,57 @@ Proyecto de *Calidad de Software — Momento 2*, Universidad Cooperativa de Colo
 Sigue el diagrama de componentes del documento:
 
 ```
- Navegador ──HTTP──▶ Nginx (web estática + proxy /api, CSP, gzip)
+ Navegador ──HTTPS──▶ Nginx (local) │ CloudFront + WAF (AWS)  ── web estática + /api
                         │
                         ▼
-                  FastAPI (API REST /api/v1, JWT, OpenAPI 3) ──▶ Motor de cálculo (NumPy)
-                     │            │
-                     ▼            ▼
-   PostgreSQL + TimescaleDB    Redis (caché de métricas/recomendaciones, cotizaciones en vivo, broker)
-                     ▲            ▲
-                     └── Celery worker + beat ──▶ Proveedor bursátil (simulado | Alpha Vantage)
-                         (cotizaciones c/5 s, alertas c/60 s, cierre diario, purga de auditoría)        └▶ SendGrid
+              API Java 21 · Spring Boot (REST /api/v1, JWT, OpenAPI 3) ──▶ Motor de cálculo (dominio puro)
+                 │                 │                      └─ tareas programadas con bloqueo distribuido
+                 ▼                 ▼                         (cotizaciones c/5 s, cierre diario, purga)
+   PostgreSQL + TimescaleDB    Redis / Valkey (caché, circuito, cuotas, ticks)
+   (RDS PostgreSQL en AWS)            │
+                                      └──▶ Proveedor bursátil (simulado | Alpha Vantage) · SendGrid
 ```
+
+- Backend, requerimientos funcionales, estructuras de datos, patrones y diagramas de llamadas: **[docs/BACKEND-JAVA.md](docs/BACKEND-JAVA.md)**
+- Nube AWS (ECS Fargate, RDS, ElastiCache, CloudFront, WAF) y su relación con ISO 25010: **[docs/AWS.md](docs/AWS.md)** · paso a paso operativo: **[docs/PLAN-DESPLIEGUE-AWS.md](docs/PLAN-DESPLIEGUE-AWS.md)**
+- Calidad ISO/IEC 25010 (dónde, objetivo, costo y evidencia): **[docs/ISO-25010.md](docs/ISO-25010.md)**
 
 ## Estructura del monorepo
 
 ```
 .
 ├── apps/
-│   ├── api/                      # Backend Python (FastAPI + SQLAlchemy + Celery)
-│   │   ├── app/
-│   │   │   ├── main.py           # App, /health, cabeceras de seguridad, manejo de errores
-│   │   │   ├── config.py         # Configuración por variables de entorno
-│   │   │   ├── db.py · models.py # Motor, sesión, modelos ORM (espejo de schema.sql)
-│   │   │   ├── security.py       # bcrypt, JWT HS256, dependencia 401
-│   │   │   ├── calculos.py       # Beta alcista/bajista, volatilidad, CAPM, backtesting, recomendaciones
-│   │   │   ├── proveedores.py    # Proveedor simulado / Alpha Vantage + reintentos y circuit breaker
-│   │   │   ├── servicios.py      # Carga inicial, métricas, cotizaciones, cierre diario, alertas
-│   │   │   ├── cache.py · auditoria.py · schemas.py · worker.py
-│   │   │   └── routers/          # auth.py · mercado.py · usuario.py
-│   │   ├── tests/                # 68 pruebas (pytest), cobertura ≥ 80 % obligatoria
+│   ├── api-java/                 # Backend Java 21 + Spring Boot 4
+│   │   ├── src/main/java/co/edu/ucc/asimetria/
+│   │   │   ├── web/              # Controladores REST, errores, límite de tasa, IP real
+│   │   │   ├── usuario/ mercado/ alerta/   # Casos de uso (servicios)
+│   │   │   ├── dominio/          # β, CAPM, perfiles (Strategy), alertas, simulación (Builder)
+│   │   │   ├── mercado/proveedor/  # Factory, Adapter, Decorator, Circuit Breaker
+│   │   │   ├── comun/estructuras/  # BufferCircular, TopK, Trie, CacheLRU, TokenBucket, SerieTemporal
+│   │   │   ├── persistencia/ tareas/ config/ auditoria/
+│   │   ├── src/main/resources/db/migration/  # Flyway (V1 esquema, V2 Timescale/BRIN, V3 índices)
+│   │   ├── src/test/             # 85 pruebas (JUnit + Testcontainers), cobertura ≥ 80 % obligatoria
 │   │   └── Dockerfile
 │   └── web/                      # Frontend HTML + CSS + JS sin dependencias (9 vistas de los mockups)
 │       ├── nginx.conf            # Proxy inverso, CSP y cabeceras de seguridad
 │       ├── Dockerfile            # Imagen Nginx con las páginas incluidas
 │       └── assets/js/            # ui.js (sesión, cliente API) · market.js (capa de datos) · pages/*.js
 ├── packages/db/
-│   ├── schema.sql                # DDL PostgreSQL/TimescaleDB (lo ejecuta el contenedor al iniciar)
-│   └── benchmark_rnf02.sql       # Prueba de capacidad: 1 M de filas
-├── docker-compose.yml            # db · redis · api · worker · beat · web
+│   └── benchmark_rnf02.sql       # Prueba de capacidad: 1 M de filas (el esquema lo versiona Flyway)
+├── infra/aws/                    # Terraform: VPC, ECS Fargate, ALB, RDS, ElastiCache, CloudFront, WAF, alarmas, OIDC
+├── docker-compose.yml            # db · redis · api (Java) · web
 ├── docker-compose.prod.yml       # Producción: imágenes de GHCR + Caddy (HTTPS) + backups + logs rotados
 ├── deploy/                       # Caddyfile · desplegar.sh · preparar-servidor.sh
-├── docs/ISO-25010.md             # Aplicación de la norma: dónde, objetivo, costo operativo y evidencia
-└── .github/workflows/           # ci.yml (pruebas, cobertura, builds) · deploy.yml (GHCR + SSH)
+├── docs/                         # ISO-25010.md · BACKEND-JAVA.md · AWS.md · PLAN-DESPLIEGUE-AWS.md · DESPLIEGUE.md
+└── .github/workflows/           # ci.yml (pruebas Java, Terraform, builds) · deploy.yml (GHCR + SSH) · deploy-aws.yml
 ```
 
 ## Producción
 
-Publicación con dominio propio, HTTPS (TLS 1.3, HTTP/3), despliegue automático desde GitHub Actions, backups diarios y ruta de escalabilidad: ver **[docs/DESPLIEGUE.md](docs/DESPLIEGUE.md)**.
+Dos rutas, ambas con despliegue automático desde GitHub Actions:
+
+- **AWS** (alta disponibilidad en 2 zonas, autoescalado, servicios gestionados): **[docs/AWS.md](docs/AWS.md)**.
+- **Un servidor** con Docker Compose + Caddy (TLS 1.3, HTTP/3, backups diarios), ~10× más barato: **[docs/DESPLIEGUE.md](docs/DESPLIEGUE.md)**.
 
 ## Ejecutar (RNF-10: un solo comando)
 
@@ -76,7 +80,7 @@ Al terminar, abre:
 
 Las páginas van dentro de la imagen de Nginx. Si editas `apps/web`, publica los cambios con `docker compose up -d --build web`.
 
-En el primer arranque la API crea el esquema y carga 5 años de historial (≈ 14.000 cotizaciones). Desde cero, con descarga de imágenes, tardó **4 min 08 s** en el equipo de prueba; con las imágenes ya descargadas, unos 26 s.
+En el primer arranque la API crea el esquema (Flyway) y carga 5 años de historial (≈ 14.000 cotizaciones). Desde cero, con descarga de imágenes, tardó **4 min 08 s** en el equipo de prueba; con las imágenes ya descargadas, unos 26 s.
 
 ### Datos reales
 
@@ -84,19 +88,21 @@ Por defecto `PROVEEDOR=simulado`: datos deterministas con el caso RiTech incluid
 
 ### Desarrollo y pruebas del backend
 
-```bash
-cd apps/api && python -m venv .venv && .venv/Scripts/pip install -r requirements-dev.txt
-```
+Java (requiere JDK 21, Maven y Docker para Testcontainers):
 
 ```bash
-cd apps/api && .venv/Scripts/python -m pytest
+cd apps/api-java && mvn verify
 ```
 
-Para desarrollar sin Docker, con SQLite, caché en memoria y las tareas dentro del mismo proceso:
+El informe de cobertura queda en `apps/api-java/target/site/jacoco/index.html`.
+
+Para ejecutar la API fuera de Docker (con `db` y `redis` del Compose levantados):
 
 ```bash
-cd apps/api && SERVIR_WEB=1 TAREAS_EN_API=1 .venv/Scripts/python -m uvicorn app.main:app --port 8000
+cd apps/api-java && mvn spring-boot:run
 ```
+
+La primera versión del backend (Python/FastAPI, mismo contrato REST) queda en el historial de Git (commit inicial de `main`).
 
 ## Qué probar
 
