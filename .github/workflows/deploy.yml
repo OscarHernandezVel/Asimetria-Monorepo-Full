@@ -37,12 +37,12 @@ jobs:
       - name: Imagen API
         uses: docker/build-push-action@v6
         with:
-          context: apps/api
+          context: apps/api-java
           push: true
           tags: ${{ env.REGISTRO }}/asimetria-api:${{ env.SHA }},${{ env.REGISTRO }}/asimetria-api:latest
           labels: org.opencontainers.image.source=https://github.com/${{ github.repository }}
-          cache-from: type=gha,scope=api
-          cache-to: type=gha,scope=api,mode=max
+          cache-from: type=gha,scope=api-java
+          cache-to: type=gha,scope=api-java,mode=max
       - name: Imagen web
         uses: docker/build-push-action@v6
         with:

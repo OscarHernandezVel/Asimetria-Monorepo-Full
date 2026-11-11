@@ -1,19 +1,32 @@
-# RNF-09: ningún cambio entra a main si rompe una prueba o baja la cobertura del 80 % (pytest-cov).
-# RNF-10: la imagen de la API y la pila de Compose deben construirse sin errores.
+# RNF-09: ningún cambio entra a main si rompe una prueba o baja la cobertura del 80 % (JaCoCo).
+# RNF-10: la imagen de la API, la pila de Compose y la infraestructura de AWS deben construirse/validarse sin errores.
 name: CI
 on:
   push: { branches: [main] }
   pull_request: { branches: [main] }
 jobs:
-  api:
+  api-java:
     runs-on: ubuntu-latest
-    defaults: { run: { working-directory: apps/api } }
+    defaults: { run: { working-directory: apps/api-java } }
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with: { python-version: "3.12", cache: pip, cache-dependency-path: apps/api/requirements-dev.txt }
-      - run: pip install -r requirements-dev.txt
-      - run: pytest   # pytest.ini exige --cov-fail-under=80
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: "21", cache: maven }
+      - run: mvn -B verify   # 85 pruebas (Testcontainers usa el Docker del runner) + JaCoCo ≥ 80 % de líneas
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: { name: cobertura-java, path: apps/api-java/target/site/jacoco, retention-days: 14 }
+
+  infra:
+    runs-on: ubuntu-latest
+    defaults: { run: { working-directory: infra/aws } }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+      - run: terraform fmt -check -recursive
+      - run: terraform init -backend=false -input=false -lockfile=readonly
+      - run: terraform validate
+
   compose:
     runs-on: ubuntu-latest
     steps:
