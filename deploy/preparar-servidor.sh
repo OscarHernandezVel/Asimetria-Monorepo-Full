@@ -1,6 +1,6 @@
 #!/bin/sh
 # Prepara un VPS Ubuntu 24.04 recién creado (ejecutar UNA vez, como root):
-#   curl -fsSL https://raw.githubusercontent.com/OscarHernandezVel/Asimetria-Monorepo/main/deploy/preparar-servidor.sh -o p.sh
+#   curl -fsSL https://raw.githubusercontent.com/OscarHernandezVel/Asimetria-Monorepo-Full/main/deploy/preparar-servidor.sh -o p.sh
 #   less p.sh   # revísalo antes de ejecutarlo
 #   sh p.sh
 set -eu
@@ -30,6 +30,6 @@ ufw --force enable
 
 echo "→ Código en /opt/asimetria"
 install -d -o deploy -g deploy /opt/asimetria
-[ -d /opt/asimetria/.git ] || sudo -u deploy git clone https://github.com/OscarHernandezVel/Asimetria-Monorepo.git /opt/asimetria
+[ -d /opt/asimetria/.git ] || sudo -u deploy git clone https://github.com/OscarHernandezVel/Asimetria-Monorepo-Full.git /opt/asimetria
 
 echo "✓ Listo. Siguiente paso: crear /opt/asimetria/.env (docs/DESPLIEGUE.md §5) como usuario deploy."

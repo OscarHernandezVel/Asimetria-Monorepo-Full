@@ -1,15 +1,6 @@
 # RNF-10: toda la pila con un solo comando →  docker compose up -d   (web en http://localhost:8080)
 name: asimetria
 
-x-api: &api
-  build: ./apps/api
-  image: asimetria-api:1.0.0
-  restart: unless-stopped
-  env_file: .env
-  environment:
-    DATABASE_URL: postgresql+psycopg://asimetria:${POSTGRES_PASSWORD}@db:5432/asimetria
-    REDIS_URL: redis://redis:6379/0
-
 services:
   db:
     image: timescale/timescaledb:2.17.2-pg16
@@ -19,8 +10,7 @@ services:
       POSTGRES_USER: asimetria
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Define POSTGRES_PASSWORD en .env}
     volumes:
-      - db-data:/var/lib/postgresql/data
-      - ./packages/db/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+      - db-data:/var/lib/postgresql/data   # el esquema lo crea y versiona Flyway al arrancar la API
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U asimetria -d asimetria"]
       interval: 5s
@@ -35,25 +25,22 @@ services:
       interval: 5s
       retries: 20
 
+  # API Java (Spring Boot). Las tareas programadas (cotizaciones, cierre diario, purga) corren dentro de la
+  # API bajo bloqueos de PostgreSQL: ya no hacen falta los contenedores worker/beat de Celery.
   api:
-    <<: *api
+    build: ./apps/api-java
+    image: asimetria-api:2.0.0
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DATABASE_URL: jdbc:postgresql://db:5432/asimetria
+      DATABASE_USER: asimetria
+      DATABASE_PASSWORD: ${POSTGRES_PASSWORD}
+      REDIS_HOST: redis
+      CONFIAR_PROXY: "true"   # solo Nginx (red interna) le habla a la API
     depends_on:
       db: { condition: service_healthy }
       redis: { condition: service_healthy }
-
-  worker:
-    <<: *api
-    command: ["celery", "-A", "app.worker", "worker", "-l", "info", "--concurrency", "2"]
-    healthcheck: { disable: true }
-    depends_on:
-      api: { condition: service_healthy }
-
-  beat:
-    <<: *api
-    command: ["celery", "-A", "app.worker", "beat", "-l", "info", "--schedule", "/tmp/celerybeat-schedule"]
-    healthcheck: { disable: true }
-    depends_on:
-      api: { condition: service_healthy }
 
   web:
     build: ./apps/web

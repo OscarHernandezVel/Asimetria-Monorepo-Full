@@ -6,20 +6,16 @@ x-logs: &logs
     driver: json-file
     options: { max-size: "10m", max-file: "5" }
 
-x-imagen-api: &imagen-api
-  image: ${REGISTRO:-ghcr.io/oscarhernandezvel}/asimetria-api:${TAG:-latest}
-
 services:
   db:
     <<: *logs
   redis:
     <<: *logs
   api:
-    <<: [*logs, *imagen-api]
-  worker:
-    <<: [*logs, *imagen-api]
-  beat:
-    <<: [*logs, *imagen-api]
+    <<: *logs
+    image: ${REGISTRO:-ghcr.io/oscarhernandezvel}/asimetria-api:${TAG:-latest}
+    environment:
+      HERRAMIENTAS_PRUEBA: "false"
   web:
     <<: *logs
     image: ${REGISTRO:-ghcr.io/oscarhernandezvel}/asimetria-web:${TAG:-latest}
