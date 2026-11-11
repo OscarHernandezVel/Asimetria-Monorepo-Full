@@ -1,0 +1,110 @@
+# CD a AWS: cuando CI pasa en main → imagen a ECR → nueva revisión de la tarea ECS (rolling, sin caída) →
+# web a S3 + invalidación de CloudFront → verificación de /health. Credenciales temporales por OIDC (sin claves).
+# Solo corre si existe la variable AWS_ROLE_ARN en el entorno aws-produccion (docs/AWS.md §5).
+name: Deploy AWS
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write   # token OIDC para asumir el rol de despliegue
+
+concurrency:
+  group: deploy-aws
+  cancel-in-progress: false
+
+env:
+  SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
+
+jobs:
+  desplegar:
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    environment:
+      name: aws-produccion
+      url: https://${{ vars.DOMINIO_AWS }}
+    steps:
+      - name: ¿AWS configurado?
+        id: config
+        run: echo "listo=${{ vars.AWS_ROLE_ARN != '' }}" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/checkout@v4
+        if: steps.config.outputs.listo == 'true'
+        with: { ref: "${{ env.SHA }}" }
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        if: steps.config.outputs.listo == 'true'
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - id: ecr
+        if: steps.config.outputs.listo == 'true'
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: ¿La imagen de este commit ya existe?
+        id: imagen
+        if: steps.config.outputs.listo == 'true'
+        run: |
+          if aws ecr describe-images --repository-name "${{ vars.ECR_REPOSITORIO }}" --image-ids imageTag="$SHA" >/dev/null 2>&1; then
+            echo "existe=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: docker/setup-buildx-action@v3
+        if: steps.config.outputs.listo == 'true' && steps.imagen.outputs.existe != 'true'
+
+      - name: Imagen API → ECR (etiquetas inmutables)
+        if: steps.config.outputs.listo == 'true' && steps.imagen.outputs.existe != 'true'
+        uses: docker/build-push-action@v6
+        with:
+          context: apps/api-java
+          push: true
+          tags: ${{ steps.ecr.outputs.registry }}/${{ vars.ECR_REPOSITORIO }}:${{ env.SHA }}
+          cache-from: type=gha,scope=api-java-aws
+          cache-to: type=gha,scope=api-java-aws,mode=max
+
+      - name: Definición de tarea vigente (la gestiona Terraform)
+        if: steps.config.outputs.listo == 'true'
+        run: aws ecs describe-task-definition --task-definition "${{ vars.ECS_FAMILIA }}" --query taskDefinition > tarea.json
+
+      - id: tarea
+        if: steps.config.outputs.listo == 'true'
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: tarea.json
+          container-name: api
+          image: ${{ steps.ecr.outputs.registry }}/${{ vars.ECR_REPOSITORIO }}:${{ env.SHA }}
+
+      # Rolling update: ECS arranca las tareas nuevas, espera a que el ALB las vea sanas y luego retira las viejas.
+      # Si no quedan sanas, el circuit breaker revierte solo a la versión anterior.
+      - name: Desplegar en ECS
+        if: steps.config.outputs.listo == 'true'
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v2
+        with:
+          task-definition: ${{ steps.tarea.outputs.task-definition }}
+          cluster: ${{ vars.ECS_CLUSTER }}
+          service: ${{ vars.ECS_SERVICIO }}
+          wait-for-service-stability: true
+
+      - name: Web estática → S3 + invalidación de CloudFront
+        if: steps.config.outputs.listo == 'true'
+        run: |
+          aws s3 sync apps/web "s3://${{ vars.BUCKET_WEB }}" --delete --exclude Dockerfile --exclude nginx.conf
+          aws cloudfront create-invalidation --distribution-id "${{ vars.CLOUDFRONT_ID }}" --paths "/*" >/dev/null
+
+      - name: Verificar en producción
+        if: steps.config.outputs.listo == 'true'
+        run: |
+          for i in $(seq 1 10); do
+            curl -fsS "https://${{ vars.DOMINIO_AWS }}/health" && exit 0
+            sleep 6
+          done
+          echo "La verificación falló. Rollback: Actions → Deploy AWS → Run workflow sobre el commit anterior" && exit 1
+
+      - name: Sin configurar
+        if: steps.config.outputs.listo != 'true'
+        run: echo "AWS no está configurado (falta vars.AWS_ROLE_ARN en el entorno aws-produccion). Ver docs/AWS.md."
