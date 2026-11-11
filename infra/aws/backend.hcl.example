@@ -1,0 +1,7 @@
+# Copia a backend.hcl y ejecuta: terraform init -backend-config=backend.hcl
+# El bucket se crea una sola vez a mano (docs/AWS.md §3): versionado + cifrado.
+bucket       = "asimetria-tfstate-<id-de-cuenta>"
+key          = "produccion/terraform.tfstate"
+region       = "us-east-1"
+encrypt      = true
+use_lockfile = true

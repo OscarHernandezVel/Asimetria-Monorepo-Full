@@ -1,0 +1,10 @@
+# Copia a terraform.tfvars (no se versiona) y ajusta.
+dominio      = "asimetria.midominio.com"
+zona_route53 = "midominio.com"
+github_repo  = "propietario/Asimetria-Monorepo-Full"
+# correo_alarmas = "equipo@midominio.com"
+
+# Alta disponibilidad completa (≈ +60 USD/mes): failover de BD, caché y NAT por zona
+# bd_multi_az               = true
+# cache_alta_disponibilidad = true
+# nat_por_az                = true
